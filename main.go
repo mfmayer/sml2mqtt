@@ -129,19 +129,21 @@ func main() {
 	_ = mqttSensor
 
 	readOptions := []gosml.ReadOption{}
-	for _, value := range sensorValues {
-		mqttValue := mqttSensor.AddValue(
-			value.ValueName,
-			goham.WithDeviceClass(value.DeviceClass),
-			goham.WithUnitOfMeasurement(value.UnitOfMeasure),
-		)
-		readOptions = append(readOptions,
-			gosml.WithObisCallback(value.ObisCode, func(message *gosml.ListEntry) {
-				floatValue := message.Float() * value.CorrectionFactor
-				fmt.Printf("%s %f\n", message.ObjectName(), floatValue)
-				mqttValue.Update(floatValue)
-			}),
-		)
+	for _, v := range sensorValues {
+		func(value sensorValue) {
+			mqttValue := mqttSensor.AddValue(
+				value.ValueName,
+				goham.WithDeviceClass(value.DeviceClass),
+				goham.WithUnitOfMeasurement(value.UnitOfMeasure),
+			)
+			readOptions = append(readOptions,
+				gosml.WithObisCallback(value.ObisCode, func(message *gosml.ListEntry) {
+					floatValue := message.Float() * value.CorrectionFactor
+					fmt.Printf("%s %f\n", message.ObjectName(), floatValue)
+					mqttValue.Update(floatValue)
+				}),
+			)
+		}(v)
 	}
 
 	// create a buffered reader for the file
